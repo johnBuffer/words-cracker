@@ -1,15 +1,114 @@
 #include <SFML/Graphics.hpp>
-#include "turret.hpp"
-#include "zombie.hpp"
-#include "game_engine.hpp"
-#include "bullet.hpp"
-#include "explosion.hpp"
-#include "letter.hpp"
-#include "utils.hpp"
-#include "zombie_physics.hpp"
-#include <event_manager.hpp>
-
+#include <fstream>
 #include <iostream>
+#include <event_manager.hpp>
+#include <vector>
+
+
+struct TreeNode
+{
+	TreeNode()
+		: terminal(false)
+	{
+		subs.resize(27u);
+		for (TreeNode*& node : subs) {
+			node = nullptr;
+		}
+	}
+
+	void add(const std::string& word)
+	{
+		const uint8_t last_index = 26u;
+		if (word.empty()) {
+			terminal = true;
+		}
+		else {
+			const char first_letter = word.front();
+			const uint8_t offset = first_letter - 'a';
+			if (offset <= last_index) {
+				if (!subs[offset]) {
+					subs[offset] = new TreeNode();
+				}
+
+				subs[offset]->add(word.substr(1u));
+			}
+		}
+	}
+
+	bool isValid(const std::string& word)
+	{
+		const uint8_t last_index = 26u;
+		if (word.empty()) {
+			return terminal;
+		}
+		else {
+			const char first_letter = word.front();
+			const uint8_t offset = first_letter - 'a';
+			if (offset <= last_index) {
+				if (!subs[offset]) {
+					return false;
+				}
+
+				return subs[offset]->isValid(word.substr(1u));
+			}
+		}
+	}
+
+	bool isLetterValid(char c)
+	{
+		if (c == ' ') {
+			return subs[26];
+		}
+		return subs[c - 'a'];
+	}
+
+	bool terminal;
+	std::vector<TreeNode*> subs;
+};
+
+
+struct Word
+{
+	Word()
+		: word("")
+		, points(0u)
+	{
+		visited.resize(16u);
+		for (uint8_t& v : visited) {
+			v = 0u;
+		}
+	}
+
+	std::vector<uint8_t> visited;
+	std::string word;
+	uint32_t points;
+};
+
+
+struct Grid
+{
+	std::vector<char> data;
+};
+
+
+struct GridExplorer
+{
+	GridExplorer(const Grid& grid_)
+		: grid(grid_)
+	{}
+
+	std::vector<Word> getWords() const
+	{
+
+	}
+
+	void explore(Word& word, uint8_t index)
+	{
+		
+	}
+
+	const Grid& grid;
+};
 
 
 int32_t main()
@@ -17,28 +116,58 @@ int32_t main()
     const uint32_t win_width(1600);
     const uint32_t win_height(900);
 
-    sf::RenderWindow window(sf::VideoMode(win_width, win_height), "ZTyper2");
-    window.setFramerateLimit(60);
+	
+	std::vector<uint8_t> weights = {
+		1,
+		2, // B?
+		3,
+		2,
+		1,
+		4,
+		2,
+		4, // H?
+		1,
+		4, // J?
+		8, // K?
+		2,
+		2,
+		1,
+		1,
+		1, // P
+		8,
+		1, // R
+		1,
+		1,
+		1,
+		2, // V
+		10, // W
+		10, // X
+		10, // Y
+		10 // Z
+	};
+	
+	TreeNode tree;
 
-    const std::vector<std::string> words = { "the", "be", "of", "and", "a", "to", "in", "he", "have", "it", "that", "for", "they", "I", "with", "as", "not", "on", "she", "at", "by", "this", "we", "you", "do", "but", "from", "or", "which", "one", "would", "all", "will", "there", "say", "who", "make", "when", "can", "more", "if", "no", "man", "out", "other", "so", "what", "time", "up", "go", "about", "than", "into", "could", "state", "only", "new", "year", "some", "take", "come", "these", "know", "see", "use", "get", "like", "then", "first", "any", "work", "now", "may", "such", "give", "over", "think", "most", "even", "find", "day", "also", "after", "way", "many", "must", "look", "before", "great", "back", "through", "long", "where", "much", "should", "well", "people", "down", "own", "just", "because", "good", "each", "those", "feel", "seem", "how", "high", "too", "place", "little", "world", "very", "still", "nation", "hand", "old", "life", "tell", "write", "become", "here", "show", "house", "both", "between", "need", "mean", "call", "develop", "under", "last", "right", "move", "thing", "general", "school", "never", "same", "another", "begin", "while", "number", "part", "turn", "real", "leave", "might", "want", "point", "form", "off", "child", "few", "small", "since", "against", "ask", "late", "home", "interest", "large", "person", "end", "open", "public", "follow", "during", "present", "without", "again", "hold", "govern", "around", "possible", "head", "consider", "word", "program", "problem", "however", "lead", "system", "set", "order", "eye", "plan", "run", "keep", "face", "fact", "group", "play", "stand", "increase", "early", "course", "change", "help", "line" };
+    std::ifstream is("../data/dict.txt");
+    std::string str;
+    while (getline(is, str)) {
+		tree.add(str);
+    }
 
-    // Register events callbacks
-    sfev::EventManager event_manager(window);
-    event_manager.addEventCallback(sf::Event::Closed, [&](sfev::CstEv) {window.close(); });
-    /*event_manager.addKeyReleasedCallback(sf::Keyboard::Space, [&](sfev::CstEv) {turret.resetTarget(); });
-    event_manager.addEventCallback(sf::Event::TextEntered, [&](sfev::CstEv ev) {turret.charTyped(ev.text.unicode); });*/
+    sf::RenderWindow window(sf::VideoMode(win_width, win_height), "WordsCracker");
+	window.setFramerateLimit(60);
+
+	sfev::EventManager event_manager(window);
+	event_manager.addEventCallback(sf::Event::Closed, [&](sfev::CstEv) {window.close(); });
 
     while (window.isOpen()) {
         const sf::Vector2i mouse_position = sf::Mouse::getPosition(window);
-
-        event_manager.processEvents();
+		event_manager.processEvents();
 
         window.clear();
         
         window.display();
     }
-
-    GameEngine::exit();
 
     return 0;
 }
