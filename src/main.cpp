@@ -10,10 +10,12 @@
 
 int32_t main()
 {
-	const uint32_t win_width(1600);
-	const uint32_t win_height(900);
+	const uint32_t win_width(1000);
+	const uint32_t win_height(530);
 
-	sf::RenderWindow window(sf::VideoMode(win_width, win_height), "ZTyper2");
+	sf::ContextSettings settings;
+	settings.antialiasingLevel = 8;
+	sf::RenderWindow window(sf::VideoMode(win_width, win_height), "ZTyper2", sf::Style::Default, settings);
 	window.setFramerateLimit(60);
 
 	// Generate dict tree
@@ -31,25 +33,17 @@ int32_t main()
 
 	sfev::EventManager event_manager(window);
 	event_manager.addEventCallback(sf::Event::Closed, [&](sfev::CstEv) {window.close(); });
-	event_manager.addKeyReleasedCallback(sf::Keyboard::Space, [&](sfev::CstEv) {});
+	event_manager.addKeyReleasedCallback(sf::Keyboard::Space, [&](sfev::CstEv) {gui.nextWord(); });
+	event_manager.addKeyReleasedCallback(sf::Keyboard::Tab, [&](sfev::CstEv) {gui.reset(); });
+	event_manager.addKeyReleasedCallback(sf::Keyboard::BackSpace, [&](sfev::CstEv) {gui.correct(); });
 	event_manager.addEventCallback(sf::Event::TextEntered, [&](sfev::CstEv ev) {gui.addChar(ev.text.unicode); });
-
-	// Set up explorer
-	std::cout << "Starting exploration..." << std::endl;
-	/*GridExplorer explorer(grid, tree);
-	auto words = explorer.getWords();
-	std::cout << words.size() << " words found" << std::endl;
-
-	std::sort(words.begin(), words.end(), [&](const Word& w1, const Word& w2) {return w1.points > w2.points; });
-	const uint64_t count = std::min(words.size(), std::size_t(50));
-	for (uint64_t i(0); i < count; ++i) {
-		std::cout << words[i].points << " " << words[i].word << std::endl;
-	}*/
 
 	while (window.isOpen()) {
 		const sf::Vector2i mouse_position = sf::Mouse::getPosition(window);
 
 		event_manager.processEvents();
+
+		gui.update(0.016f);
 
 		window.clear();
 
